@@ -96,10 +96,10 @@ tag_manifest() {
 }
 
 # query for the github releases
-GITHUB_TAGS="$(wget -q -O - "https://api.github.com/repos/VictoriaMetrics/VictoriaLogs/tags?per_page=50")"
+GITHUB_RELEASES="$(wget -q -O - "https://api.github.com/repos/VictoriaMetrics/VictoriaLogs/releases?per_page=50")"
 
 # get the last five major.minor tags
-EXPECTED_MAJOR_MINOR_TAGS="$(echo "${GITHUB_TAGS}" | jq -r '.[]|.name' | awk -F '.' '{print $1 "." $2}' | sort --version-sort -ru | grep -v -- -cluster | head -n 5)"
+EXPECTED_MAJOR_MINOR_TAGS="$(echo "${GITHUB_RELEASES}" | jq -r '.[]|.tag_name' | awk -F '.' '{print $1 "." $2}' | sort --version-sort -ru | grep -v -- -cluster | head -n 5)"
 
 # set expected major tags from the major.minor list
 EXPECTED_MAJOR_TAGS="$(echo "${EXPECTED_MAJOR_MINOR_TAGS}" | tr " " "\n" | awk -F '.' '{print $1}' | sort -nu | xargs)"
@@ -108,10 +108,10 @@ EXPECTED_MAJOR_TAGS="$(echo "${EXPECTED_MAJOR_MINOR_TAGS}" | tr " " "\n" | awk -
 ALL_EXPECTED_TAGS="${EXPECTED_MAJOR_MINOR_TAGS} ${EXPECTED_MAJOR_TAGS}"
 
 # get the latest tag
-LATEST_MAJOR_MINOR_TAG="$(echo "${GITHUB_TAGS}" | jq -r '.[]|.name' | awk -F 'v' '{print $2}' | awk -F '.' '{print $1 "." $2}' | sort --version-sort -ru | grep -v -- -cluster | head -n 1)"
+LATEST_MAJOR_MINOR_TAG="$(echo "${GITHUB_RELEASES}" | jq -r '.[]|.tag_name' | awk -F 'v' '{print $2}' | awk -F '.' '{print $1 "." $2}' | sort --version-sort -ru | grep -v -- -cluster | head -n 1)"
 
 # get full tag name, sorted by version so we can extract the latest major.minor.bugfix tag
-VM_RELEASES="$(echo "${GITHUB_TAGS}" | jq -r '.[]|.name' | grep -v -- -cluster | sort --version-sort -r)"
+VM_RELEASES="$(echo "${GITHUB_RELEASES}" | jq -r '.[]|.tag_name' | grep -v -- -cluster | sort --version-sort -r)"
 
 # load env_parallel
 . "$(command -v env_parallel.bash)"
