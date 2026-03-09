@@ -95,11 +95,12 @@ tag_manifest() {
   echo -e "done\n"
 }
 
-# query for the github releases
-GITHUB_RELEASES="$(wget -q -O - "https://api.github.com/repos/VictoriaMetrics/VictoriaMetrics/releases?per_page=50")"
+# query for the github non-LTS releases
+#GITHUB_RELEASES="$(wget -q -O - "https://api.github.com/repos/VictoriaMetrics/VictoriaMetrics/releases?per_page=50")"
+GITHUB_RELEASES="$(wget -q -O - "https://api.github.com/repos/VictoriaMetrics/VictoriaMetrics/releases?per_page=50" | jq '[.[] | select(.body | test("lts-releases") | not)]')"
 
-# get the last five major.minor tags
-EXPECTED_MAJOR_MINOR_TAGS="$(echo "${GITHUB_RELEASES}" | jq -r '.[]|.tag_name' | awk -F '.' '{print $1 "." $2}' | sort --version-sort -ru | grep -v -- -cluster | head -n 5)"
+# get the last two major.minor tags
+EXPECTED_MAJOR_MINOR_TAGS="$(echo "${GITHUB_RELEASES}" | jq -r '.[]|.tag_name' | awk -F '.' '{print $1 "." $2}' | sort --version-sort -ru | grep -v -- -cluster | head -n 2)"
 
 # set expected major tags from the major.minor list
 EXPECTED_MAJOR_TAGS="$(echo "${EXPECTED_MAJOR_MINOR_TAGS}" | tr " " "\n" | awk -F '.' '{print $1}' | sort -nu | xargs)"
@@ -117,4 +118,4 @@ VM_RELEASES="$(echo "${GITHUB_RELEASES}" | jq -r '.[]|.tag_name' | grep -v -- -c
 . "$(command -v env_parallel.bash)"
 
 # run multiple scans in parallel
-env_parallel --env tag_manifest --env VM_RELEASES --env LATEST_MAJOR_MINOR_TAG --env ALL_EXPECTED_TAGS --halt soon,fail=1 -j 5 tag_manifest ::: ${ALL_EXPECTED_TAGS}
+env_parallel --env tag_manifest --env VM_RELEASES --env LATEST_MAJOR_MINOR_TAG --env ALL_EXPECTED_TAGS --halt soon,fail=1 -j 2 tag_manifest ::: ${ALL_EXPECTED_TAGS}
